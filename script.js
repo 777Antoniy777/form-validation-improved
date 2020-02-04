@@ -1,116 +1,93 @@
 const form = document.querySelector('.registration');
 const inputs = document.querySelectorAll('input');
-const emailRe = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 const templateContent = document.querySelector('#template').content;
+const MIN_LENGTH = 2;
+const EMAIL_REG = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
-const addMessage = (inputWrap, templateCont, mes) => {
-    let messageTemplate;
+class Validation {
+    addMessage (inputWrap, templateCont, mes) {
+        let messageTemplate;
 
-    inputWrap.append(templateCont);
-    messageTemplate = inputWrap.querySelector('.input-message span');
-    messageTemplate.textContent = mes;
-}
-
-const removeMessage = (mesWrap) => {
-    if (mesWrap) {
-        mesWrap.remove();
+        inputWrap.append(templateCont);
+        messageTemplate = inputWrap.querySelector('.input-message span');
+        messageTemplate.textContent = mes;
     }
-};
 
-const setCond = (input) => {
-    if (input.value.length > 0 && input.value.length <= 2) {
-        return true;
+    removeMessage(mesWrap) {
+        if (mesWrap) mesWrap.remove();
     }
-    return false;
-};
 
-const setOptions = (...rest) => {
-    const [mesWrap, inputWrap, input, tempCont, mes, status, setCond] = rest;
-    const condition = setCond(input);
-
-    if (condition) {
-        input.classList.add('invalid');
-
-        if (status === 'mouseout' || status === 'focusout') {
-            removeMessage(mesWrap);
+    setCondition(input, cond) {
+        if (input.value) {
+            if (cond) return true;
         }
-
-        if (status === 'mouseover' || status === 'focus') {
-            removeMessage(mesWrap);
-            addMessage(inputWrap, tempCont, mes);
-        }
-
         return false;
-    } 
-    else {
-        if (document.activeElement !== input) {
-            removeMessage(mesWrap);
-        }   
+    }
+
+    setOptions(...rest) {
+        const [input, mes, status, setCondition] = rest;
+        const inputWrapper = input.closest('.registration__input-wrapper');
+        const clonnedTemplateContent = templateContent.cloneNode(true);
+        let condition;
+        let messageWrapper;
+        if (inputWrapper) messageWrapper = inputWrapper.querySelector('.input-message');
+
+        if (input.id === 'username') {
+            condition = setCondition(input, input.value.length > 0 && input.value.length <= MIN_LENGTH);
+        } else if (input.id === 'email') {
+            condition = setCondition(input, !input.value.match(EMAIL_REG) && input.value);
+        }
+
+        if (condition) {
+            input.classList.add('invalid');
+
+            this.removeMessage(messageWrapper);
+            if (status) this.addMessage(inputWrapper, clonnedTemplateContent, mes);
+
+            return false;
+        } else {
+            input.classList.remove('invalid');
+
+            if (document.activeElement !== input) {
+                this.removeMessage(messageWrapper);
+            }   
+        }
+    }
+
+    checkValidityField(cond, target, status) {
+        if (cond) {
+            if (status) {
+                this.isMinLength(target, true);
+                return true;
+            }
+
+            this.isMinLength(target);
+        }
     }
 };
 
-const isMinLength = (input, min, status) => {
-    const inputWrapper = input.closest('.registration__input-wrapper');
-    const clonnedTemplateContent = templateContent.cloneNode(true);
-    let messageWrapper;
-    if (inputWrapper) messageWrapper = inputWrapper.querySelector('.input-message');
-
-    const condition = input.value.length > 0 && input.value.length <= 2;
-
-    input.classList.remove('invalid');
-
-    setOptions(
-        messageWrapper,
-        inputWrapper,
-        input,
-        clonnedTemplateContent,
-        'Min length should be 3 characters',
-        status,
-        setCond,
-    );
+class UsernameValidation extends Validation {
+    isMinLength(input, status) {
+        this.setOptions(input, 'Min length should be 3 characters', status, this.setCondition);
+    }
 };
 
-const isMatchEmail = (input, status) => {
-    const inputWrapper = input.closest('.registration__input-wrapper');
-    const clonnedTemplateContent = templateContent.cloneNode(true);
-    let messageWrapper;
-    if (inputWrapper) messageWrapper = inputWrapper.querySelector('.input-message');
-    input.classList.remove('invalid');
-    const t = !input.value.match(emailRe) && input.value;
-
-    setOptions(
-        messageWrapper,
-        inputWrapper,
-        input,
-        clonnedTemplateContent,
-        'Value should be email adress',
-        status,
-        setCond,
-    );
+class EmailValidation extends Validation {
+    isMatchEmail(input, status) {
+        this.setOptions(input, 'Value should be email adress', status, this.setCondition);
+    }
 };
+
+const usernameValidation = new UsernameValidation();
+const emailValidation = new EmailValidation();
 
 const onFormMouseover = (evt) => {
     const target = evt.target;
     const userInput = target.closest('input[id="username"]');
     const emailInput = target.closest('input[id="email"]');
 
-    if (userInput) {
-        if (document.activeElement !== userInput) {
-            isMinLength(target, 2, 'mouseover');
-        } else {
-            isMinLength(target, 2);
-        }
-    }
-
-    if (emailInput) {
-        if (document.activeElement !== emailInput) {
-            isMatchEmail(target, 'mouseover');
-            console.log('mouseover1')
-        } else {
-            isMatchEmail(target);
-            console.log('mouseover2')
-        }
-    }
+    if (userInput) usernameValidation.isMinLength(userInput, true);
+    if (emailInput) emailValidation.isMatchEmail(emailInput, true);
 };
 
 const onFormMouseout = (evt) => {
@@ -118,23 +95,8 @@ const onFormMouseout = (evt) => {
     const userInput = target.closest('input[id="username"]');
     const emailInput = target.closest('input[id="email"]');
 
-    if (userInput) {
-        if (document.activeElement !== userInput) {
-            isMinLength(target, 2, 'mouseout');
-            console.log('mouseout1')
-        } else {
-            isMinLength(target, 2);
-            console.log('mouseout2')
-        }
-    }
-
-    if (emailInput) {
-        if (document.activeElement !== emailInput) {
-            isMatchEmail(target, 'mouseout');
-        } else {
-            isMatchEmail(target);
-        }
-    }
+    if (userInput && document.activeElement !== userInput) usernameValidation.isMinLength(userInput, false);
+    if (emailInput && document.activeElement !== emailInput) emailValidation.isMatchEmail(emailInput, false);
 };
 
 const onFormFocusin = (evt) => {
@@ -142,14 +104,8 @@ const onFormFocusin = (evt) => {
     const userInput = target.closest('input[id="username"]');
     const emailInput = target.closest('input[id="email"]');
 
-    if (userInput) {
-        isMinLength(target, 2, 'focus');
-        console.log('focus1')
-    }
-
-    if (emailInput) {
-        isMatchEmail(target, 'focus');
-    }
+    if (userInput) usernameValidation.isMinLength(userInput, true);
+    if (emailInput) emailValidation.isMatchEmail(emailInput, true);
 };
 
 const onFormFocusout = (evt) => {
@@ -157,33 +113,133 @@ const onFormFocusout = (evt) => {
     const userInput = target.closest('input[id="username"]');
     const emailInput = target.closest('input[id="email"]');
 
-    if (document.activeElement !== userInput) {
-        isMinLength(target, 2, 'focusout');
-        console.log('focusout1', target)
-    } else {
-        isMinLength(target, 2);
-        console.log('focusout2')
-    }
-
-    if (document.activeElement !== emailInput) {
-        isMatchEmail(target, 'focusout');
-    } else {
-        isMatchEmail(target);
-    }
-};
-
-const onFormInput = (evt) => {
-    const target = evt.target;
-    const input = target.closest('input');
-
-    if (!input || input.dataset.status === 'change') return false;
-    if (!input.value.length) return false;
-
-    console.log(target);
+    if (userInput) usernameValidation.isMinLength(userInput, false);
+    if (emailInput) emailValidation.isMatchEmail(emailInput, false);
 };
 
 form.addEventListener('mouseover', onFormMouseover);
 form.addEventListener('mouseout', onFormMouseout);
 form.addEventListener('focusin', onFormFocusin);
 form.addEventListener('focusout', onFormFocusout);
-form.addEventListener('input', onFormInput);
+
+
+// рабочий код
+// const addMessage = (inputWrap, templateCont, mes) => {
+//     let messageTemplate;
+
+//     inputWrap.append(templateCont);
+//     messageTemplate = inputWrap.querySelector('.input-message span');
+//     messageTemplate.textContent = mes;
+// }
+
+// const removeMessage = (mesWrap) => {
+//     if (mesWrap) mesWrap.remove();
+// };
+
+// const setCondition = (input, cond) => {
+//     if (input.value) {
+//         if (cond) return true;
+//     }
+//     return false;
+// };
+
+// const setOptions = (...rest) => {
+//     const [input, mes, status, setCondition] = rest;
+//     const inputWrapper = input.closest('.registration__input-wrapper');
+//     const clonnedTemplateContent = templateContent.cloneNode(true);
+//     let condition;
+//     let messageWrapper;
+//     if (inputWrapper) messageWrapper = inputWrapper.querySelector('.input-message');
+
+//     if (input.id === 'username') {
+//         condition = setCondition(input, input.value.length > 0 && input.value.length <= MIN_LENGTH);
+//     } else if (input.id === 'email') {
+//         condition = setCondition(input, !input.value.match(EMAIL_REG) && input.value);
+//     }
+
+//     if (condition) {
+//         input.classList.add('invalid');
+
+//         removeMessage(messageWrapper);
+//         if (status) addMessage(inputWrapper, clonnedTemplateContent, mes);
+
+//         return false;
+//     } else {
+//         input.classList.remove('invalid');
+
+//         if (document.activeElement !== input) {
+//             removeMessage(messageWrapper);
+//         }   
+//     }
+// };
+
+// const isMinLength = (input, status) => {
+//     setOptions(input, 'Min length should be 3 characters', status, setCondition);
+// };
+
+// const isMatchEmail = (input, status) => {
+//     setOptions(input, 'Value should be email adress', status, setCondition);
+// };
+
+// const checkValidityField = (cond, func, target, status) => {
+//     if (cond) {
+//         if (status) {
+//             func(target, true);
+//             return true;
+//         }
+
+//         func(target);
+//     }
+// };
+
+// const onFormMouseover = (evt) => {
+//     const target = evt.target;
+//     const userInput = target.closest('input[id="username"]');
+//     const emailInput = target.closest('input[id="email"]');
+
+//     checkValidityField(userInput, isMinLength, target, true);
+//     checkValidityField(emailInput, isMatchEmail, target, true);
+// };
+
+// const onFormMouseout = (evt) => {
+//     const target = evt.target;
+//     const userInput = target.closest('input[id="username"]');
+//     const emailInput = target.closest('input[id="email"]');
+
+//     checkValidityField(userInput && document.activeElement !== userInput, isMinLength, target);
+//     checkValidityField(emailInput && document.activeElement !== emailInput, isMatchEmail, target);
+// };
+
+// const onFormFocusin = (evt) => {
+//     const target = evt.target;
+//     const userInput = target.closest('input[id="username"]');
+//     const emailInput = target.closest('input[id="email"]');
+
+//     checkValidityField(userInput, isMinLength, target, true);
+//     checkValidityField(emailInput, isMatchEmail, target, true);
+// };
+
+// const onFormFocusout = (evt) => {
+//     const target = evt.target;
+//     const userInput = target.closest('input[id="username"]');
+//     const emailInput = target.closest('input[id="email"]');
+
+//     checkValidityField(userInput, isMinLength, target);
+//     checkValidityField(emailInput, isMatchEmail, target);
+// };
+
+// const onFormInput = (evt) => {
+//     const target = evt.target;
+//     const input = target.closest('input');
+
+//     if (!input || input.dataset.status === 'change') return false;
+//     if (!input.value.length) return false;
+
+//     console.log(target);
+// };
+
+// form.addEventListener('mouseover', onFormMouseover);
+// form.addEventListener('mouseout', onFormMouseout);
+// form.addEventListener('focusin', onFormFocusin);
+// form.addEventListener('focusout', onFormFocusout);
+// form.addEventListener('input', onFormInput);
