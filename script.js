@@ -3,8 +3,13 @@ const inputs = document.querySelectorAll('input');
 const templateContent = document.querySelector('#template').content;
 const MIN_LENGTH = 2;
 const EMAIL_REG = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const USER_REG = /aaaa/;
 
 class Validation {
+    constructor() {
+        this.arr = [];
+    }
+
     addMessage (inputWrap, templateCont, mes) {
         let messageTemplate;
 
@@ -33,7 +38,12 @@ class Validation {
         if (inputWrapper) messageWrapper = inputWrapper.querySelector('.input-message');
 
         if (input.id === 'username') {
-            condition = setCondition(input, input.value.length > 0 && input.value.length <= MIN_LENGTH);
+            let condition1 = setCondition(input, input.value.length > 0 && input.value.length <= MIN_LENGTH);
+            let condition2 = setCondition(input, !input.value.match(USER_REG) && input.value);
+
+            console.log(condition1, condition2);
+            condition = condition1 || condition2;
+            console.log(condition);
         } else if (input.id === 'email') {
             condition = setCondition(input, !input.value.match(EMAIL_REG) && input.value);
         }
@@ -53,22 +63,15 @@ class Validation {
             }   
         }
     }
-
-    checkValidityField(cond, target, status) {
-        if (cond) {
-            if (status) {
-                this.isMinLength(target, true);
-                return true;
-            }
-
-            this.isMinLength(target);
-        }
-    }
 };
 
 class UsernameValidation extends Validation {
     isMinLength(input, status) {
         this.setOptions(input, 'Min length should be 3 characters', status, this.setCondition);
+    }
+
+    isMatchReg(input, status) {
+        this.setOptions(input, 'Value should be АЙЯЙЯЙЯ', status, this.setCondition);
     }
 };
 
@@ -88,6 +91,8 @@ const onFormMouseover = (evt) => {
 
     if (userInput) usernameValidation.isMinLength(userInput, true);
     if (emailInput) emailValidation.isMatchEmail(emailInput, true);
+    //
+    if (userInput) usernameValidation.isMatchReg(userInput, true);
 };
 
 const onFormMouseout = (evt) => {
@@ -97,6 +102,8 @@ const onFormMouseout = (evt) => {
 
     if (userInput && document.activeElement !== userInput) usernameValidation.isMinLength(userInput, false);
     if (emailInput && document.activeElement !== emailInput) emailValidation.isMatchEmail(emailInput, false);
+    //
+    if (userInput && document.activeElement !== userInput) usernameValidation.isMatchReg(userInput, false);
 };
 
 const onFormFocusin = (evt) => {
@@ -106,6 +113,8 @@ const onFormFocusin = (evt) => {
 
     if (userInput) usernameValidation.isMinLength(userInput, true);
     if (emailInput) emailValidation.isMatchEmail(emailInput, true);
+    //
+    if (userInput) usernameValidation.isMatchReg(userInput, true);
 };
 
 const onFormFocusout = (evt) => {
@@ -115,6 +124,8 @@ const onFormFocusout = (evt) => {
 
     if (userInput) usernameValidation.isMinLength(userInput, false);
     if (emailInput) emailValidation.isMatchEmail(emailInput, false);
+    //
+    if (userInput) usernameValidation.isMatchReg(userInput, false);
 };
 
 form.addEventListener('mouseover', onFormMouseover);
