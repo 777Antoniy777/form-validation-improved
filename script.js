@@ -5,11 +5,17 @@ const MIN_LENGTH = 2;
 const EMAIL_REG = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 const USER_REG = /aaaa/;
 
-class Validation {
-    constructor() {
-        this.arr = [];
-    }
+const Errors = {
+    USERNAME: {
+        IS_MIN_LENGTH: 'Min length should be 3 characters',
+        IS_MATCH_REG: 'Value should be aaaa',
+    },
+    EMAIL: {
+        IS_MATCH_REG: 'Value should be email',
+    },
+};
 
+class Validation {
     addMessage (inputWrap, templateCont, mes) {
         let messageTemplate;
 
@@ -30,29 +36,41 @@ class Validation {
     }
 
     setOptions(...rest) {
-        const [input, mes, status, setCondition] = rest;
+        const [input, status, setCondition] = rest;
         const inputWrapper = input.closest('.registration__input-wrapper');
         const clonnedTemplateContent = templateContent.cloneNode(true);
         let condition;
         let messageWrapper;
         if (inputWrapper) messageWrapper = inputWrapper.querySelector('.input-message');
 
-        if (input.id === 'username') {
-            let condition1 = setCondition(input, input.value.length > 0 && input.value.length <= MIN_LENGTH);
-            let condition2 = setCondition(input, !input.value.match(USER_REG) && input.value);
+        let message = '';
 
-            console.log(condition1, condition2);
-            condition = condition1 || condition2;
-            console.log(condition);
+        if (input.id === 'username') {
+            const isMinLength = setCondition(input, input.value.length > 0 && input.value.length <= MIN_LENGTH);
+            const isMatchReg = setCondition(input, !input.value.match(USER_REG) && input.value);
+
+            if (isMinLength) {
+                condition = isMinLength;
+                message = Errors.USERNAME.IS_MIN_LENGTH;
+            } else if (!isMinLength && isMatchReg) {
+                condition = isMatchReg;
+                message = Errors.USERNAME.IS_MATCH_REG;
+            }
+
         } else if (input.id === 'email') {
-            condition = setCondition(input, !input.value.match(EMAIL_REG) && input.value);
+            const isMatchReg = setCondition(input, !input.value.match(EMAIL_REG) && input.value);
+
+            if (isMatchReg) {
+                condition = isMatchReg;
+                message = Errors.EMAIL.IS_MATCH_REG;
+            }
         }
 
         if (condition) {
             input.classList.add('invalid');
 
             this.removeMessage(messageWrapper);
-            if (status) this.addMessage(inputWrapper, clonnedTemplateContent, mes);
+            if (status) this.addMessage(inputWrapper, clonnedTemplateContent, message);
 
             return false;
         } else {
@@ -63,36 +81,21 @@ class Validation {
             }   
         }
     }
-};
 
-class UsernameValidation extends Validation {
-    isMinLength(input, status) {
-        this.setOptions(input, 'Min length should be 3 characters', status, this.setCondition);
-    }
-
-    isMatchReg(input, status) {
-        this.setOptions(input, 'Value should be АЙЯЙЯЙЯ', status, this.setCondition);
+    checkValidtity(input, status) {
+        this.setOptions(input, status, this.setCondition);
     }
 };
 
-class EmailValidation extends Validation {
-    isMatchEmail(input, status) {
-        this.setOptions(input, 'Value should be email adress', status, this.setCondition);
-    }
-};
-
-const usernameValidation = new UsernameValidation();
-const emailValidation = new EmailValidation();
+const validaion = new Validation();
 
 const onFormMouseover = (evt) => {
     const target = evt.target;
     const userInput = target.closest('input[id="username"]');
     const emailInput = target.closest('input[id="email"]');
 
-    if (userInput) usernameValidation.isMinLength(userInput, true);
-    if (emailInput) emailValidation.isMatchEmail(emailInput, true);
-    //
-    if (userInput) usernameValidation.isMatchReg(userInput, true);
+    if (userInput) validaion.checkValidtity(userInput, true);
+    if (emailInput) validaion.checkValidtity(emailInput, true);
 };
 
 const onFormMouseout = (evt) => {
@@ -100,10 +103,8 @@ const onFormMouseout = (evt) => {
     const userInput = target.closest('input[id="username"]');
     const emailInput = target.closest('input[id="email"]');
 
-    if (userInput && document.activeElement !== userInput) usernameValidation.isMinLength(userInput, false);
-    if (emailInput && document.activeElement !== emailInput) emailValidation.isMatchEmail(emailInput, false);
-    //
-    if (userInput && document.activeElement !== userInput) usernameValidation.isMatchReg(userInput, false);
+    if (userInput && document.activeElement !== userInput) validaion.checkValidtity(userInput, false);
+    if (emailInput && document.activeElement !== emailInput) validaion.checkValidtity(emailInput, false);
 };
 
 const onFormFocusin = (evt) => {
@@ -111,10 +112,8 @@ const onFormFocusin = (evt) => {
     const userInput = target.closest('input[id="username"]');
     const emailInput = target.closest('input[id="email"]');
 
-    if (userInput) usernameValidation.isMinLength(userInput, true);
-    if (emailInput) emailValidation.isMatchEmail(emailInput, true);
-    //
-    if (userInput) usernameValidation.isMatchReg(userInput, true);
+    if (userInput) validaion.checkValidtity(userInput, true);
+    if (emailInput) validaion.checkValidtity(emailInput, true);
 };
 
 const onFormFocusout = (evt) => {
@@ -122,10 +121,8 @@ const onFormFocusout = (evt) => {
     const userInput = target.closest('input[id="username"]');
     const emailInput = target.closest('input[id="email"]');
 
-    if (userInput) usernameValidation.isMinLength(userInput, false);
-    if (emailInput) emailValidation.isMatchEmail(emailInput, false);
-    //
-    if (userInput) usernameValidation.isMatchReg(userInput, false);
+    if (userInput) validaion.checkValidtity(userInput, false);
+    if (emailInput) validaion.checkValidtity(emailInput, false);
 };
 
 form.addEventListener('mouseover', onFormMouseover);
